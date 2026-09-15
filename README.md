@@ -49,7 +49,7 @@ Already-uploaded matches are remembered, so runs only pick up new games.
 Either way, the installer will:
 - install Node.js if you don't have it,
 - install dependencies and a browser,
-- ask for your **FACEIT nickname** and **Data API key** (see below),
+- ask which **detection mode** you want (see below),
 - ask what time to run daily (default **7:00 PM**),
 - register the scheduled task,
 - open a browser for you to **log into FACEIT** once,
@@ -57,9 +57,26 @@ Either way, the installer will:
 
 That's it — from then on it runs itself.
 
+### Two ways to detect your matches
+
+The installer asks you to pick one:
+
+- **With a FACEIT API key** *(recommended)* — finds your matches via FACEIT's
+  official Data API. Most reliable; the daily "what's new" check never depends on
+  the browser. Needs a free key (2-minute signup, below).
+- **No API key** — finds your matches through your logged-in browser session
+  instead. One less thing to set up, but match detection then rides the same
+  browser path as the upload, so it's a bit more sensitive to FACEIT changes.
+
+Both modes upload demos the same way. You can switch later by editing
+`DISCOVERY_MODE` in `.env` (`api` or `browser`).
+
 ---
 
 ## Getting a FACEIT Data API key (free)
+
+*Only needed if you chose the **With a FACEIT API key** mode. In no-key mode you
+can skip this entirely.*
 
 1. Go to **https://developers.faceit.com** and sign in with your FACEIT account.
 2. Click **Create App** (name it anything, e.g. `Leetify uploader`).
@@ -116,17 +133,26 @@ Unregister-ScheduledTask -TaskName "FaceitLeetifyUploader" -Confirm:$false
 
 ## Configuration (`.env`)
 
-Created by the installer. Required:
+Created by the installer.
+
+**API-key mode** (`DISCOVERY_MODE=api`, the default) needs:
 
 ```
 FACEIT_NICKNAME=your_nickname
 FACEIT_DATA_API_KEY=your_data_api_key
 ```
 
+**No-key mode** needs only:
+
+```
+DISCOVERY_MODE=browser
+```
+
 Optional overrides:
 
 | Key              | Default  | Meaning                                             |
 |------------------|----------|-----------------------------------------------------|
+| `DISCOVERY_MODE` | `api`    | `api` (key) or `browser` (logged-in session).       |
 | `LOOKBACK_DAYS`  | `30`     | How far back to consider matches.                   |
 | `HISTORY_LIMIT`  | `20`     | How many recent matches to scan per run.            |
 | `MAX_PER_RUN`    | ∞        | Cap uploads per run.                                |
@@ -155,7 +181,8 @@ Optional overrides:
 | `install.cmd`     | One-click installer.                                    |
 | `run.cmd`         | What the scheduled task runs.                            |
 | `src/index.js`    | Main job: detect → presign → upload.                    |
-| `src/faceit.js`   | FACEIT Data API (find matches).                         |
+| `src/faceit.js`   | FACEIT Data API (find matches, api mode).               |
+| `src/faceit-browser.js` | Find matches via logged-in session (browser mode).|
 | `src/faceit-demo.js` | Turnstile + `download-url` (get presigned link).     |
 | `src/leetify.js`  | Submit to Leetify.                                      |
 | `src/browser.js`  | Persistent logged-in browser, launched minimized.       |

@@ -18,11 +18,21 @@ function required(name) {
   return v.trim();
 }
 
+// 'api'     = find matches via the free FACEIT Data API (needs a key).
+// 'browser' = find matches via your logged-in browser session (no key).
+const discoveryMode = (process.env.DISCOVERY_MODE || 'api').toLowerCase();
+
 export const config = {
-  // FACEIT nickname to watch (case-sensitive).
-  faceitNickname: required('FACEIT_NICKNAME'),
-  // Free FACEIT Data API key (Bearer). NOT the paused Downloads API key.
-  faceitDataApiKey: required('FACEIT_DATA_API_KEY'),
+  discoveryMode,
+  // In 'browser' mode the nickname and key aren't needed (we use your session).
+  faceitNickname:
+    discoveryMode === 'browser'
+      ? (process.env.FACEIT_NICKNAME?.trim() ?? '')
+      : required('FACEIT_NICKNAME'),
+  faceitDataApiKey:
+    discoveryMode === 'browser'
+      ? (process.env.FACEIT_DATA_API_KEY?.trim() ?? '')
+      : required('FACEIT_DATA_API_KEY'),
   // How many days back to consider (FACEIT hard-limits demos to ~30 days).
   lookbackDays: Number(process.env.LOOKBACK_DAYS ?? 30),
   // Max matches to scan per run.

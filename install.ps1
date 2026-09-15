@@ -52,19 +52,30 @@ if (-not $browserOk) {
   $script:useChromium = $true
 }
 
-# --- 4. Credentials (.env) --------------------------------------------------
-Write-Step "Your FACEIT details"
+# --- 4. Setup mode + credentials (.env) -------------------------------------
+Write-Step "Setup mode"
 $envPath = Join-Path $root '.env'
 $writeEnv = $true
 if (Test-Path $envPath) {
-  $ans = Read-Host ".env already exists. Overwrite it? (y/N)"
+  $ans = Read-Host ".env already exists. Reconfigure it? (y/N)"
   if ($ans -notmatch '^[yY]') { $writeEnv = $false }
 }
 if ($writeEnv) {
-  Write-Host "(See README.md -> 'Getting a FACEIT Data API key' if you don't have a key yet.)"
-  do { $nick = (Read-Host "FACEIT nickname (case-sensitive)").Trim() } while (-not $nick)
-  do { $key  = (Read-Host "FACEIT Data API key").Trim() } while (-not $key)
-  $lines = @("FACEIT_NICKNAME=$nick", "FACEIT_DATA_API_KEY=$key")
+  Write-Host "How should it find your matches?"
+  Write-Host "  [1] With a FACEIT API key  - most reliable match detection (free key, ~2 min to get)"
+  Write-Host "  [2] No API key             - detects matches through your logged-in browser instead"
+  $mode = Read-Host "Choose 1 or 2 [default 1]"
+
+  if ($mode -eq '2') {
+    $lines = @("DISCOVERY_MODE=browser")
+    Write-Host "No-key mode selected. You'll just log into FACEIT in a moment."
+  }
+  else {
+    Write-Host "(See README.md -> 'Getting a FACEIT Data API key' if you don't have a key yet.)"
+    do { $nick = (Read-Host "FACEIT nickname (case-sensitive)").Trim() } while (-not $nick)
+    do { $key  = (Read-Host "FACEIT Data API key").Trim() } while (-not $key)
+    $lines = @("FACEIT_NICKNAME=$nick", "FACEIT_DATA_API_KEY=$key")
+  }
   if ($script:useChromium) { $lines += "BROWSER_CHANNEL=chromium" }
   Set-Content -Path $envPath -Value $lines -Encoding ascii
   Write-Host ".env saved."
