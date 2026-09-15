@@ -30,11 +30,23 @@ Already-uploaded matches are remembered, so runs only pick up new games.
 
 ## Install
 
+### Easiest: download the installer (.exe)
+
+1. Go to the **[Releases](https://github.com/memirmakar/faceit-leetify-uploader/releases/latest)**
+   page and download **`FaceitLeetifyUploader-Setup.exe`**.
+2. Double-click it. It downloads the tool and runs the setup below.
+
+> The installer isn't code-signed, so Windows SmartScreen may show a warning the
+> first time. Click **More info → Run anyway**. You can read exactly what it does
+> in [`bootstrap.ps1`](bootstrap.ps1) and [`install.ps1`](install.ps1).
+
+### Alternative: from source
+
 1. **Download this repo** (green *Code* button → *Download ZIP*, then unzip;
    or `git clone`).
 2. Double-click **`install.cmd`**.
 
-The installer will:
+Either way, the installer will:
 - install Node.js if you don't have it,
 - install dependencies and a browser,
 - ask for your **FACEIT nickname** and **Data API key** (see below),
