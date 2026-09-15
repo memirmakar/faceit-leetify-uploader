@@ -1,0 +1,16 @@
+{
+  "name": "faceit-leetify-uploader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automatically detects new FACEIT CS2 matches and uploads their demos to Leetify.",
+  "type": "module",
+  "scripts": {
+    "matches": "node src/list-matches.js",
+    "run": "node src/index.js",
+    "login": "node src/login.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "playwright": "^1.48.0"
+  }
+}
