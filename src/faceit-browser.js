@@ -69,8 +69,10 @@ export async function getDemoResourceBrowser(page, matchId, myGuid) {
     const j = await r.json();
     const p = j?.payload ?? {};
     const map = p.voting?.map?.pick?.[0] ?? (Array.isArray(p.maps) ? p.maps[0] : undefined);
-    const winner = Array.isArray(p.results) ? p.results[0]?.winner : p.results?.winner;
+    const result = Array.isArray(p.results) ? p.results[0] : p.results;
+    const winner = result?.winner;
     let won = null;
+    let score = null;
     if (winner && p.teams) {
       const ids = (fac) => (p.teams[fac]?.roster ?? []).map((x) => x.id ?? x.player_id);
       const myFaction = ids('faction1').includes(myGuid)
@@ -78,8 +80,14 @@ export async function getDemoResourceBrowser(page, matchId, myGuid) {
         : ids('faction2').includes(myGuid)
           ? 'faction2'
           : null;
-      if (myFaction) won = myFaction === winner;
+      if (myFaction) {
+        won = myFaction === winner;
+        const other = myFaction === 'faction1' ? 'faction2' : 'faction1';
+        const a = result?.factions?.[myFaction]?.score;
+        const b = result?.factions?.[other]?.score;
+        if (a != null && b != null) score = `${a}-${b}`;
+      }
     }
-    return { resourceUrl: (p.demoURLs ?? [])[0] ?? null, map, won, status: p.status ?? p.state };
+    return { resourceUrl: (p.demoURLs ?? [])[0] ?? null, map, won, score, status: p.status ?? p.state };
   }, { matchId, myGuid });
 }

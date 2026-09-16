@@ -59,12 +59,13 @@ async function listMatches(page) {
 async function resolveResource(page, matchId, myId) {
   if (config.discoveryMode === 'browser') {
     const r = await getDemoResourceBrowser(page, matchId, myId);
-    return { resourceUrl: r.resourceUrl, map: r.map, won: r.won, status: r.status ?? r.error };
+    return { resourceUrl: r.resourceUrl, map: r.map, won: r.won, score: r.score, status: r.status ?? r.error };
   }
   const d = await getMatch(matchId);
   const map = d.voting?.map?.pick?.[0];
   const winner = d.results?.winner;
   let won = null;
+  let score = null;
   if (winner && d.teams) {
     const ids = (fac) => (d.teams[fac]?.roster ?? []).map((x) => x.player_id);
     const myFaction = ids('faction1').includes(myId)
@@ -72,9 +73,15 @@ async function resolveResource(page, matchId, myId) {
       : ids('faction2').includes(myId)
         ? 'faction2'
         : null;
-    if (myFaction) won = myFaction === winner;
+    if (myFaction) {
+      won = myFaction === winner;
+      const other = myFaction === 'faction1' ? 'faction2' : 'faction1';
+      const a = d.results?.score?.[myFaction];
+      const b = d.results?.score?.[other];
+      if (a != null && b != null) score = `${a}-${b}`;
+    }
   }
-  return { resourceUrl: d.demo_url?.[0], map, won, status: d.status };
+  return { resourceUrl: d.demo_url?.[0], map, won, score, status: d.status };
 }
 
 async function main() {
@@ -131,7 +138,7 @@ async function main() {
     for (const m of candidates) {
       const id = m.matchId;
       try {
-        const { resourceUrl, map, won, status } = await resolveResource(page, id, myId);
+        const { resourceUrl, map, won, score, status } = await resolveResource(page, id, myId);
         if (!resourceUrl) {
           log(`SKIP ${id}: no demo available (status=${status})`);
           markFailed(state, id, `no demo (${status})`);
@@ -154,6 +161,7 @@ async function main() {
             finishedAt: m.finishedAt,
             map,
             won,
+            score,
             matchId: id,
           });
           if (saved.error) log(`WARN ${id}: demo save failed (${saved.error})`);

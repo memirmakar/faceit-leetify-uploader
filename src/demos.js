@@ -15,24 +15,27 @@ import { config } from './config.js';
 import { log } from './logger.js';
 
 // Matches only files WE created, so pruning never touches other demos.
-const OUR_PATTERN = /^\d{4}-\d{2}-\d{2}-.+-(win|loss)(-[0-9a-f]{1,8})?\.dem$/i;
+const OUR_PATTERN =
+  /^\d{4}-\d{2}-\d{2}-.+-(win|loss|unknown)(-\d{1,3}-\d{1,3})?(-[0-9a-f]{1,8})?\.dem$/i;
 
-export function demoFilename(finishedAt, map, won) {
+export function demoFilename(finishedAt, map, won, score) {
   const d = new Date((finishedAt || 0) * 1000);
   const date = Number.isNaN(d.getTime()) ? 'unknown' : d.toISOString().slice(0, 10);
   const safeMap = (map || 'unknown').replace(/[^a-z0-9_]/gi, '') || 'unknown';
   const res = won == null ? 'unknown' : won ? 'win' : 'loss';
-  return `${date}-${safeMap}-${res}.dem`;
+  const cleanScore = score ? String(score).replace(/[^0-9-]/g, '') : '';
+  const scorePart = cleanScore ? `-${cleanScore}` : '';
+  return `${date}-${safeMap}-${res}${scorePart}.dem`;
 }
 
 /**
  * Download + decompress a demo to config.demoDir.
  * @returns {Promise<{name?: string, mb?: number, skipped?: boolean, error?: string}>}
  */
-export async function saveDemo({ downloadUrl, finishedAt, map, won, matchId }) {
+export async function saveDemo({ downloadUrl, finishedAt, map, won, score, matchId }) {
   mkdirSync(config.demoDir, { recursive: true });
 
-  let name = demoFilename(finishedAt, map, won);
+  let name = demoFilename(finishedAt, map, won, score);
   let dest = join(config.demoDir, name);
   if (existsSync(dest)) {
     // Same date+map+result already exists — disambiguate with the match id.

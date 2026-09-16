@@ -139,7 +139,8 @@ and Leetify downloads them server-side.
 If you turn on local saving (the installer offers it, or set the vars below), each
 demo is also:
 - downloaded and **decompressed** to a playable `.dem` (FACEIT serves `.dem.zst`),
-- named **`<date>-<map>-<win|loss>.dem`** (e.g. `2026-09-15-de_dust2-loss.dem`),
+- named **`<date>-<map>-<win|loss>-<yourscore>-<oppscore>.dem`**
+  (e.g. `2026-09-15-de_dust2-loss-8-13.dem` — your rounds first),
 - saved to your CS2 folder so it shows up in-game,
 - **auto-deleted after `DEMO_RETENTION_DAYS` days** (default 5).
 
