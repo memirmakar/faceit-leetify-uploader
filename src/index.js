@@ -6,11 +6,16 @@
 //   'api'     — match list via the free FACEIT Data API (needs a key)
 //   'browser' — match list via your logged-in browser session (no key)
 import { config } from './config.js';
-import { getRecentMatches, getMatch } from './faceit.js';
-import { listMatchesBrowser, getDemoResourceBrowser } from './faceit-browser.js';
+import { getRecentMatches, getMatch, getPlayer } from './faceit.js';
+import {
+  listMatchesBrowser,
+  getDemoResourceBrowser,
+  getMyGuidBrowser,
+} from './faceit-browser.js';
 import { getPresignedUrl } from './faceit-demo.js';
 import { submitDemo } from './leetify.js';
 import { launchContext } from './browser.js';
+import { saveDemo, pruneDemos } from './demos.js';
 import { log } from './logger.js';
 import { notify } from './notifier.js';
 import {
@@ -50,14 +55,26 @@ async function listMatches(page) {
   }));
 }
 
-// Get a demo resource URL for one match, mode-appropriately.
-async function resolveResource(page, matchId) {
+// Get demo resource URL + map + win/loss for one match, mode-appropriately.
+async function resolveResource(page, matchId, myId) {
   if (config.discoveryMode === 'browser') {
-    const r = await getDemoResourceBrowser(page, matchId);
-    return { resourceUrl: r.resourceUrl, status: r.status ?? r.error };
+    const r = await getDemoResourceBrowser(page, matchId, myId);
+    return { resourceUrl: r.resourceUrl, map: r.map, won: r.won, status: r.status ?? r.error };
   }
   const d = await getMatch(matchId);
-  return { resourceUrl: d.demo_url?.[0], status: d.status };
+  const map = d.voting?.map?.pick?.[0];
+  const winner = d.results?.winner;
+  let won = null;
+  if (winner && d.teams) {
+    const ids = (fac) => (d.teams[fac]?.roster ?? []).map((x) => x.player_id);
+    const myFaction = ids('faction1').includes(myId)
+      ? 'faction1'
+      : ids('faction2').includes(myId)
+        ? 'faction2'
+        : null;
+    if (myFaction) won = myFaction === winner;
+  }
+  return { resourceUrl: d.demo_url?.[0], map, won, status: d.status };
 }
 
 async function main() {
@@ -72,8 +89,25 @@ async function main() {
   };
 
   try {
+    if (config.saveDemos) {
+      const pruned = pruneDemos();
+      if (pruned) log(`Pruned ${pruned} demo(s) older than ${config.demoRetentionDays} days.`);
+    }
+
     // 'browser' mode needs the browser just to list matches; 'api' mode doesn't.
     if (config.discoveryMode === 'browser') await ensureBrowser();
+
+    // Only needed to label saved demos win/loss.
+    let myId = null;
+    if (config.saveDemos) {
+      if (config.discoveryMode === 'browser') {
+        await ensureBrowser();
+        myId = await getMyGuidBrowser(page);
+      } else {
+        myId = (await getPlayer(config.faceitNickname)).player_id;
+      }
+    }
+
     log('Checking FACEIT for recent matches...');
     const list = await listMatches(page);
 
@@ -97,7 +131,7 @@ async function main() {
     for (const m of candidates) {
       const id = m.matchId;
       try {
-        const { resourceUrl, status } = await resolveResource(page, id);
+        const { resourceUrl, map, won, status } = await resolveResource(page, id, myId);
         if (!resourceUrl) {
           log(`SKIP ${id}: no demo available (status=${status})`);
           markFailed(state, id, `no demo (${status})`);
@@ -112,6 +146,19 @@ async function main() {
           markFailed(state, id, reason);
           failed++;
           continue;
+        }
+
+        if (config.saveDemos && config.demoDir) {
+          const saved = await saveDemo({
+            downloadUrl: presign.downloadUrl,
+            finishedAt: m.finishedAt,
+            map,
+            won,
+            matchId: id,
+          });
+          if (saved.error) log(`WARN ${id}: demo save failed (${saved.error})`);
+          else if (saved.skipped) log(`     ${id}: demo already saved (${saved.name})`);
+          else log(`     ${id}: saved demo ${saved.name} (${saved.mb} MB)`);
         }
 
         const res = await uploadWithRateLimit(presign.downloadUrl);

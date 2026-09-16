@@ -42,6 +42,10 @@ export const config = {
   browserChannel: process.env.BROWSER_CHANNEL || 'msedge',
   // Persistent browser profile dir (kept logged into FACEIT between runs).
   profileDir: process.env.PROFILE_DIR ?? join(ROOT, '.browser-profile'),
+  // Optionally also save the .dem file locally (decompressed, nicely named).
+  saveDemos: (process.env.SAVE_DEMOS ?? 'false').toLowerCase() === 'true',
+  demoDir: process.env.DEMO_DIR || '',
+  demoRetentionDays: Number(process.env.DEMO_RETENTION_DAYS ?? 5),
   // File tracking which match IDs have already been uploaded.
   stateFile: join(ROOT, 'state', 'uploaded.json'),
   logDir: join(ROOT, 'logs'),

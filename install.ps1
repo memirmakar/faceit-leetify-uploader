@@ -7,6 +7,24 @@ Set-Location $root
 
 function Write-Step($t) { Write-Host "`n=== $t ===" -ForegroundColor Cyan }
 
+function Find-Cs2Csgo {
+  $steam = $null
+  try { $steam = (Get-ItemProperty 'HKCU:\Software\Valve\Steam' -Name SteamPath -EA Stop).SteamPath } catch {}
+  if (-not $steam) { try { $steam = (Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Valve\Steam' -Name InstallPath -EA Stop).InstallPath } catch {} }
+  if (-not $steam) { return $null }
+  $libs = @($steam)
+  $vdf = Join-Path $steam 'steamapps\libraryfolders.vdf'
+  if (Test-Path $vdf) {
+    $c = Get-Content $vdf -Raw
+    [regex]::Matches($c, '"path"\s+"([^"]+)"') | ForEach-Object { $libs += ($_.Groups[1].Value -replace '\\\\', '\') }
+  }
+  foreach ($l in $libs) {
+    $p = Join-Path $l 'steamapps\common\Counter-Strike Global Offensive\game\csgo'
+    if (Test-Path $p) { return $p }
+  }
+  return $null
+}
+
 Write-Host "FACEIT -> Leetify uploader installer" -ForegroundColor Green
 Write-Host "This sets up an automatic daily upload of your FACEIT CS2 demos to Leetify.`n"
 
@@ -77,6 +95,21 @@ if ($writeEnv) {
     $lines = @("FACEIT_NICKNAME=$nick", "FACEIT_DATA_API_KEY=$key")
   }
   if ($script:useChromium) { $lines += "BROWSER_CHANNEL=chromium" }
+
+  # Optional: also save demo files locally, auto-pruned after 5 days.
+  Write-Host ""
+  $saveAns = Read-Host "Also save each demo to your CS2 folder, auto-deleted after 5 days? (y/N)"
+  if ($saveAns -match '^[yY]') {
+    $demoDir = Find-Cs2Csgo
+    if ($demoDir) { Write-Host "Found CS2: $demoDir" }
+    else { $demoDir = (Read-Host "Couldn't find CS2. Paste your ...\game\csgo path (blank to skip)").Trim() }
+    if ($demoDir) {
+      $lines += "SAVE_DEMOS=true"
+      $lines += "DEMO_DIR=$demoDir"
+      $lines += "DEMO_RETENTION_DAYS=5"
+    }
+  }
+
   Set-Content -Path $envPath -Value $lines -Encoding ascii
   Write-Host ".env saved."
 }

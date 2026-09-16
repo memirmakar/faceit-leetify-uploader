@@ -41,13 +41,26 @@ export async function listMatchesBrowser(page, size = 30) {
   }, { size });
 }
 
-/**
- * The demo resource URL for a match via the logged-in session.
- * @returns {Promise<{resourceUrl: string|null, status?: string, error?: string}>}
- */
-export async function getDemoResourceBrowser(page, matchId) {
+/** The logged-in user's FACEIT id (guid). */
+export async function getMyGuidBrowser(page) {
   await ensureFaceit(page);
-  return page.evaluate(async ({ matchId }) => {
+  return page.evaluate(async () => {
+    const r = await fetch('https://www.faceit.com/api/users/v1/sessions/me', {
+      credentials: 'include', headers: { Accept: 'application/json' },
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j?.payload?.id ?? null;
+  });
+}
+
+/**
+ * Demo resource URL + map + win/loss for a match, via the logged-in session.
+ * @returns {Promise<{resourceUrl: string|null, map?: string, won?: boolean|null, status?: string, error?: string}>}
+ */
+export async function getDemoResourceBrowser(page, matchId, myGuid) {
+  await ensureFaceit(page);
+  return page.evaluate(async ({ matchId, myGuid }) => {
     const r = await fetch(`https://www.faceit.com/api/match/v2/match/${matchId}`, {
       credentials: 'include',
       headers: { Accept: 'application/json' },
@@ -55,7 +68,18 @@ export async function getDemoResourceBrowser(page, matchId) {
     if (!r.ok) return { resourceUrl: null, error: `match/v2 HTTP ${r.status}` };
     const j = await r.json();
     const p = j?.payload ?? {};
-    const urls = p.demoURLs ?? [];
-    return { resourceUrl: urls[0] ?? null, status: p.status ?? p.state };
-  }, { matchId });
+    const map = p.voting?.map?.pick?.[0] ?? (Array.isArray(p.maps) ? p.maps[0] : undefined);
+    const winner = Array.isArray(p.results) ? p.results[0]?.winner : p.results?.winner;
+    let won = null;
+    if (winner && p.teams) {
+      const ids = (fac) => (p.teams[fac]?.roster ?? []).map((x) => x.id ?? x.player_id);
+      const myFaction = ids('faction1').includes(myGuid)
+        ? 'faction1'
+        : ids('faction2').includes(myGuid)
+          ? 'faction2'
+          : null;
+      if (myFaction) won = myFaction === winner;
+    }
+    return { resourceUrl: (p.demoURLs ?? [])[0] ?? null, map, won, status: p.status ?? p.state };
+  }, { matchId, myGuid });
 }

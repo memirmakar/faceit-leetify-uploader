@@ -131,6 +131,27 @@ Unregister-ScheduledTask -TaskName "FaceitLeetifyUploader" -Confirm:$false
 
 ---
 
+## Saving demos locally (optional)
+
+By default the tool never stores demos on your PC — it just hands Leetify a link
+and Leetify downloads them server-side.
+
+If you turn on local saving (the installer offers it, or set the vars below), each
+demo is also:
+- downloaded and **decompressed** to a playable `.dem` (FACEIT serves `.dem.zst`),
+- named **`<date>-<map>-<win|loss>.dem`** (e.g. `2026-09-15-de_dust2-loss.dem`),
+- saved to your CS2 folder so it shows up in-game,
+- **auto-deleted after `DEMO_RETENTION_DAYS` days** (default 5).
+
+Pruning only ever removes files this tool created (matching that naming pattern),
+so your own recordings and other demos are never touched.
+
+```
+SAVE_DEMOS=true
+DEMO_DIR=C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\csgo
+DEMO_RETENTION_DAYS=5
+```
+
 ## Configuration (`.env`)
 
 Created by the installer.
@@ -158,6 +179,9 @@ Optional overrides:
 | `MAX_PER_RUN`    | ∞        | Cap uploads per run.                                |
 | `DELAY_MS`       | `4000`   | Pause between matches.                               |
 | `BROWSER_CHANNEL`| `msedge` | `msedge`, `chrome`, or `chromium` (bundled).        |
+| `SAVE_DEMOS`     | `false`  | Also save demos locally (see above).                |
+| `DEMO_DIR`       | —        | Where to save demos (your CS2 `...\game\csgo`).     |
+| `DEMO_RETENTION_DAYS` | `5` | Auto-delete saved demos after this many days.       |
 
 ---
 
@@ -185,6 +209,7 @@ Optional overrides:
 | `src/faceit-browser.js` | Find matches via logged-in session (browser mode).|
 | `src/faceit-demo.js` | Turnstile + `download-url` (get presigned link).     |
 | `src/leetify.js`  | Submit to Leetify.                                      |
+| `src/demos.js`    | Optional: save/decompress/name/prune local demo files.  |
 | `src/browser.js`  | Persistent logged-in browser, launched minimized.       |
 | `src/login.js`    | One-time / occasional FACEIT login.                     |
 | `src/state.js`    | Remembers uploaded/failed matches.                      |
