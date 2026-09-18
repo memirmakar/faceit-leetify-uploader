@@ -25,6 +25,25 @@ import {
   markUploaded,
   markFailed,
 } from './state.js';
+import { existsSync, writeFileSync, unlinkSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+// Prevents a manual run and the scheduled run from colliding on the browser.
+const LOCK = join(config.logDir, 'run.lock');
+function acquireLock() {
+  try {
+    if (existsSync(LOCK) && Date.now() - statSync(LOCK).mtimeMs < 20 * 60 * 1000) {
+      return false;
+    }
+    writeFileSync(LOCK, String(process.pid));
+    return true;
+  } catch {
+    return true; // if the lock can't be managed, don't block the run
+  }
+}
+function releaseLock() {
+  try { unlinkSync(LOCK); } catch { /* ignore */ }
+}
 
 const MAX_PER_RUN = process.env.MAX_PER_RUN ? Number(process.env.MAX_PER_RUN) : Infinity;
 const DELAY_MS = process.env.DELAY_MS ? Number(process.env.DELAY_MS) : 4000;
@@ -85,6 +104,10 @@ async function resolveResource(page, matchId, myId) {
 }
 
 async function main() {
+  if (!acquireLock()) {
+    log('Another run is already in progress; exiting.');
+    return { uploaded: 0, failed: 0 };
+  }
   const state = loadState();
   log(`Discovery mode: ${config.discoveryMode}`);
 
@@ -203,6 +226,7 @@ async function main() {
     return { uploaded, failed };
   } finally {
     if (context) await context.close();
+    releaseLock();
   }
 }
 

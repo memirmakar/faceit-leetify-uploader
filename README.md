@@ -131,6 +131,30 @@ Unregister-ScheduledTask -TaskName "FaceitLeetifyUploader" -Confirm:$false
 
 ---
 
+## Run on demand + tray icon
+
+A small **tray icon** sits in your system tray (under the "show hidden icons"
+chevron) so you can upload whenever you want:
+
+- **Right-click the icon → Upload now** (or **double-click** it).
+- **Double-click the desktop shortcut** "Upload FACEIT demos now" — the tray icon
+  shows the progress and pops a summary when it's done.
+- The icon also has **Open demos folder**, **Open log**, and **Exit**.
+
+It starts automatically with Windows. Set it up (or re-run) with:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File setup-tray.ps1
+```
+
+**Make it always visible on the taskbar:** new tray icons start in the hidden
+overflow. On Windows 11, open the overflow (the `^` chevron) and **drag the icon
+down onto the taskbar**, or go to *Settings → Personalization → Taskbar → Other
+system tray icons* and turn it on.
+
+The scheduled daily run still happens quietly in the background; the tray reflects
+the on-demand runs you start.
+
 ## Saving demos locally (optional)
 
 By default the tool never stores demos on your PC — it just hands Leetify a link
@@ -205,6 +229,8 @@ Optional overrides:
 |-------------------|---------------------------------------------------------|
 | `install.cmd`     | One-click installer.                                    |
 | `run.cmd`         | What the scheduled task runs.                            |
+| `tray.ps1` / `start-tray.vbs` | Resident tray icon (upload on demand).      |
+| `upload-now.vbs` / `setup-tray.ps1` | "Upload now" trigger + tray setup.    |
 | `src/index.js`    | Main job: detect → presign → upload.                    |
 | `src/faceit.js`   | FACEIT Data API (find matches, api mode).               |
 | `src/faceit-browser.js` | Find matches via logged-in session (browser mode).|

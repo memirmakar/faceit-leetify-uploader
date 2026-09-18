@@ -131,7 +131,14 @@ Write-Step "Log into FACEIT"
 Write-Host "A browser window will open. Log into FACEIT, then press Enter back here."
 & $node "src\login.js"
 
-# --- 7. Optional first run --------------------------------------------------
+# --- 7. Tray icon + run on demand -------------------------------------------
+Write-Step "Tray icon + run on demand"
+$trayAns = Read-Host "Add a tray icon (starts with Windows) to upload on demand? (Y/n)"
+if ($trayAns -notmatch '^[nN]') {
+  & (Join-Path $root 'setup-tray.ps1')
+}
+
+# --- 8. Optional first run --------------------------------------------------
 Write-Step "First run"
 $run = Read-Host "Upload your recent demos now? (Y/n)"
 if ($run -notmatch '^[nN]') { & $node "src\index.js" }
