@@ -26,7 +26,23 @@ import {
   markFailed,
 } from './state.js';
 import { existsSync, writeFileSync, unlinkSync, statSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+
+// Manual runs (tray "Upload now") pass --force to run even while gaming.
+const FORCE = process.argv.includes('--force') || process.env.FORCE_RUN === '1';
+
+function gameRunning() {
+  try {
+    const out = execSync(`tasklist /FI "IMAGENAME eq ${config.gameProcess}" /NH`, {
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+    return out.toLowerCase().includes(config.gameProcess.toLowerCase());
+  } catch {
+    return false;
+  }
+}
 
 // Prevents a manual run and the scheduled run from colliding on the browser.
 const LOCK = join(config.logDir, 'run.lock');
@@ -104,6 +120,10 @@ async function resolveResource(page, matchId, myId) {
 }
 
 async function main() {
+  if (config.skipWhileGaming && !FORCE && gameRunning()) {
+    log(`${config.gameProcess} is running; skipping this run. (Use "Upload now" to force.)`);
+    return { uploaded: 0, failed: 0, skipped: true };
+  }
   if (!acquireLock()) {
     log('Another run is already in progress; exiting.');
     return { uploaded: 0, failed: 0 };

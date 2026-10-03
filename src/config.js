@@ -42,6 +42,9 @@ export const config = {
   browserChannel: process.env.BROWSER_CHANNEL || 'msedge',
   // Persistent browser profile dir (kept logged into FACEIT between runs).
   profileDir: process.env.PROFILE_DIR ?? join(ROOT, '.browser-profile'),
+  // Skip automatic runs while a game is running (so it won't disturb play).
+  skipWhileGaming: (process.env.SKIP_WHILE_GAMING ?? 'true').toLowerCase() === 'true',
+  gameProcess: process.env.GAME_PROCESS || 'cs2.exe',
   // Optionally also save the .dem file locally (decompressed, nicely named).
   saveDemos: (process.env.SAVE_DEMOS ?? 'false').toLowerCase() === 'true',
   demoDir: process.env.DEMO_DIR || '',

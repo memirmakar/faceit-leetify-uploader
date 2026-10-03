@@ -139,7 +139,12 @@ chevron) so you can upload whenever you want:
 - **Right-click the icon → Upload now** (or **double-click** it).
 - **Double-click the desktop shortcut** "Upload FACEIT demos now" — the tray icon
   shows the progress and pops a summary when it's done.
-- The icon also has **Open demos folder**, **Open log**, and **Exit**.
+- The icon also has **Open demos folder**, **Clear saved demos (free space)**,
+  **Open log**, and **Exit**.
+
+**Free up disk space:** right-click the tray icon → **Clear saved demos** deletes
+every demo the tool saved (your own recordings are never touched). Same thing from
+the command line: `node src\clear-demos.js`.
 
 It starts automatically with Windows. Set it up (or re-run) with:
 
@@ -154,6 +159,13 @@ system tray icons* and turn it on.
 
 The scheduled daily run still happens quietly in the background; the tray reflects
 the on-demand runs you start.
+
+**Won't interrupt your game:** the automatic 7 PM run **skips itself if CS2 is
+running** (`SKIP_WHILE_GAMING`, default on) so it never disturbs play. The
+trade-off: if you're playing at 7 PM, that day's auto-upload is skipped — just
+hit **Upload now** when you're done (manual runs always force), or it catches up
+at the next run. Set `SKIP_WHILE_GAMING=false` to disable, or `GAME_PROCESS` to
+watch a different game.
 
 ## Saving demos locally (optional)
 
@@ -199,6 +211,8 @@ Optional overrides:
 | Key              | Default  | Meaning                                             |
 |------------------|----------|-----------------------------------------------------|
 | `DISCOVERY_MODE` | `api`    | `api` (key) or `browser` (logged-in session).       |
+| `SKIP_WHILE_GAMING` | `true` | Skip auto runs while the game is open.             |
+| `GAME_PROCESS`   | `cs2.exe`| Process name that counts as "playing".              |
 | `LOOKBACK_DAYS`  | `30`     | How far back to consider matches.                   |
 | `HISTORY_LIMIT`  | `20`     | How many recent matches to scan per run.            |
 | `MAX_PER_RUN`    | ∞        | Cap uploads per run.                                |

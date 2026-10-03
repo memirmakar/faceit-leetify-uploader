@@ -35,9 +35,10 @@ $icon.Visible = $true
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
 $miRun = New-Object System.Windows.Forms.ToolStripMenuItem('Upload now')
 $miDemos = New-Object System.Windows.Forms.ToolStripMenuItem('Open demos folder')
+$miClear = New-Object System.Windows.Forms.ToolStripMenuItem('Clear saved demos (free space)')
 $miLog = New-Object System.Windows.Forms.ToolStripMenuItem('Open log')
 $miExit = New-Object System.Windows.Forms.ToolStripMenuItem('Exit')
-$menu.Items.AddRange(@($miRun, $miDemos, $miLog, (New-Object System.Windows.Forms.ToolStripSeparator), $miExit))
+$menu.Items.AddRange(@($miRun, $miDemos, $miClear, $miLog, (New-Object System.Windows.Forms.ToolStripSeparator), $miExit))
 $icon.ContextMenuStrip = $menu
 
 $script:proc = $null
@@ -46,7 +47,7 @@ function Start-Upload {
   if ($script:proc -and -not $script:proc.HasExited) { return }
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = $node
-  $psi.Arguments = '"' + $index + '"'
+  $psi.Arguments = '"' + $index + '" --force'
   $psi.WorkingDirectory = $root
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow = $true
@@ -83,6 +84,22 @@ $timer.Start()
 $miRun.Add_Click({ Start-Upload })
 $icon.Add_DoubleClick({ Start-Upload })
 $miDemos.Add_Click({ if ($demoDir -and (Test-Path $demoDir)) { Start-Process explorer.exe $demoDir } else { Start-Process explorer.exe $root } })
+$miClear.Add_Click({
+  $ans = [System.Windows.Forms.MessageBox]::Show(
+    'Delete all demos this tool saved? Your own recordings are NOT touched.',
+    'FACEIT -> Leetify', 'YesNo', 'Question')
+  if ($ans -eq 'Yes') {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $node
+    $psi.Arguments = '"' + (Join-Path $root 'src\clear-demos.js') + '"'
+    $psi.WorkingDirectory = $root
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $p = [System.Diagnostics.Process]::Start($psi)
+    $p.WaitForExit()
+    $icon.ShowBalloonTip(4000, 'FACEIT -> Leetify', 'Saved demos cleared.', [System.Windows.Forms.ToolTipIcon]::Info)
+  }
+})
 $miLog.Add_Click({ if (Test-Path $logFile) { Start-Process notepad.exe $logFile } })
 $miExit.Add_Click({
   $timer.Stop()

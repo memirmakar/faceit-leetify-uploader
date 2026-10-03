@@ -83,3 +83,23 @@ export function pruneDemos() {
   }
   return n;
 }
+
+/** Delete ALL demos this tool saved (any age), to free disk space. */
+export function clearAllDemos() {
+  if (!config.demoDir || !existsSync(config.demoDir)) return { count: 0, mb: 0 };
+  let count = 0;
+  let bytes = 0;
+  for (const f of readdirSync(config.demoDir)) {
+    if (!OUR_PATTERN.test(f)) continue;
+    const p = join(config.demoDir, f);
+    try {
+      const size = statSync(p).size;
+      unlinkSync(p);
+      count++;
+      bytes += size;
+    } catch {
+      /* ignore */
+    }
+  }
+  return { count, mb: Math.round(bytes / 1048576) };
+}
